@@ -7,7 +7,8 @@ Vue.use(Vuex)
 export default new Vuex.Store({
     state: {
         clients: [],
-        engines: []
+        engines: [],
+        config:[]
     },
     mutations: {
         clients(state, data) {
@@ -25,6 +26,9 @@ export default new Vuex.Store({
         },
         engines(state, data) {
             state.engines = data
+        },
+        config(state,data){
+            state.config=data
         }
     },
     actions: {
@@ -36,11 +40,18 @@ export default new Vuex.Store({
                 .then(data => {
                     commit('engines', data.data)
                 })
+        },
+        async configAct({commit}){
+            await axios.get(`http://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_PORT}/api/getConfig`)
+            .then(data=>{
+                commit('config',data.data)
+            })
         }
     },
     modules: {},
     getters: {
         getClients: state => state.clients,
-        getEngines: state => state.engines
+        getEngines: state => state.engines,
+        getConfig: state=> state.config
     }
 })

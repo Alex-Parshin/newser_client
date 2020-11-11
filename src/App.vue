@@ -63,10 +63,12 @@
                   </v-btn>
                 </div>
               </td>
-              <td style="cursor:pointer">Изменить</td>
+              <td style="cursor:pointer" @click="client=item; sheetConfig=true; checkClient=true; getConfigAct()">Изменить</td>
               <td style="cursor:pointer;" @click="client=item; sheet=true" >Смотреть</td>
             </tr>
           </tbody>
+          
+
         </template>
       </v-simple-table>
     </v-card>
@@ -96,6 +98,35 @@
           </ul>
       </v-sheet>
     </v-bottom-sheet>
+
+    <div class="text-center">
+    <v-bottom-sheet
+      v-model="sheetConfig"
+      persistent
+    >
+
+      <v-sheet
+      v-if="checkClient"
+        class="text-center logs_block"
+        
+      >
+        <v-btn
+          class="mt-3 closeBtn"
+          color="error"
+          @click="sheetConfig = !sheetConfig"
+        >
+            &#10006;
+        </v-btn>
+        <v-spacer></v-spacer>
+        <span class="nameLogs">Конфигурация {{client.name}}</span>
+        <div class="both"></div>
+        <div class="config">
+          <v-jsoneditor  v-if="client.name.split('_')[0]==='puppeteer'" v-model="getConfig"/>
+          <v-jsoneditor  v-if="client.name.split('_')[0]==='mercury'" v-model="json"/>
+        </div>
+      </v-sheet>
+    </v-bottom-sheet>
+  </div>
   </div>
 
     <v-row justify="center" v-if="puppeteer">
@@ -151,10 +182,16 @@
   </v-app>
 </template>
 
+
+
 <script>
 import { mapGetters, mapActions } from "vuex";
+import VJsoneditor from 'v-jsoneditor/src/index'
 export default {
   name: "App",
+  components: {
+        VJsoneditor
+    },
   data() {
     return {
       client: '',
@@ -167,12 +204,15 @@ export default {
       engines: [false, false, false],
       sheet: false,
       logs:[],
-      showLogs:null,
-      showLogsWindow:false
+      sheetConfig:false,
+      checkClient: false,
+      json: {
+                      "hello": "vue"
+                  }
     }
   },
   computed: {
-    ...mapGetters(["getClients", "getEngines"]),
+    ...mapGetters(["getClients", "getEngines","getConfig"]),
   },
   sockets: {
     connect: function () {
@@ -189,7 +229,7 @@ export default {
     },
   },
   methods: {
-    ...mapActions(["clientsAct", "enginesAct"]),
+    ...mapActions(["clientsAct", "enginesAct","configAct"]),
     setClient(client) {
       this.client = client
       this.client_name = client.name
@@ -201,6 +241,9 @@ export default {
     },
     async getEnginesAct() {
       await this.enginesAct()
+    },
+    async getConfigAct(){
+      await this.configAct()
     },
 
     /**               Socket Methods                  */
@@ -297,5 +340,12 @@ export default {
   }
   .main{
     min-height: 85vh;
+  }
+  .both{
+    clear: both;
+  }
+  .config{
+    height: 82%;
+    overflow-y: scroll;
   }
 </style>
