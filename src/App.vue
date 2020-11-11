@@ -69,20 +69,6 @@
           </tbody>
         </template>
       </v-simple-table>
-      <v-card-title>
-        <v-responsive  >
-        <div v-if="showLogsWindow" class="closeLogs">
-          <div @click="showLogsWindow=!showLogsWindow">  
-            &#10006;
-            </div>
-          <ul class="logs">
-            <li v-for="(log,i) in client.logs" :key="i">{{log}}</li>
-          </ul>
-          
-        </div>
-
-        </v-responsive>
-      </v-card-title>
     </v-card>
 
     <div class="text-center">
@@ -96,13 +82,14 @@
         
       >
         <v-btn
-          class="mt-6"
-          text
+          class="mt-3 closeBtn"
           color="error"
           @click="sheet = !sheet"
         >
-          close
+            &#10006;
         </v-btn>
+        <v-spacer></v-spacer>
+        <span class="nameLogs">Логи {{client.name}}</span>
 
           <ul class="logs">
             <li v-for="(log,i) in client.logs" :key="i">{{log}}</li>
@@ -257,11 +244,14 @@ export default {
   .logs_block{
     height: 42vh;
   }
-  .logs{    
+  .logs{
+    text-align: left;
+    height: 82%;    
     display:flex;
     flex-direction:column;
     flex-wrap: nowrap;
     justify-content: flex-start;
+    overflow-y: scroll;
     align-items: flex-start;
     box-sizing: border-box;
     padding: 3px 15px;
@@ -281,18 +271,23 @@ export default {
     width:200px;
     margin: 25px;
   }
-  .closeLogs{
-    position: relative;
-  }
-  .closeLogs>div{
-    position: absolute;
-    top:0;
-    right:25px;
-    font-size: 36px;
-    opacity: 0.5;
-    line-height: 36px;
+  .closeBtn{
+    opacity: 0.7;
     cursor: pointer;
-    
+    float: right;
+    margin-right: 30px;
+    font-size: 200%;
+  }
+  .nameLogs{
+    margin-top: 10px;
+    margin-bottom: 5px;
+    float: left;   
+    margin-left: 25px;
+    font-size: 20px;
+    padding: 7px;
+    font-style: italic;
+    border-radius: 8px;
+    background: rgba(180,25,12,.3);
   }
   .closeLogs>div:active{
     opacity: 0.9;
@@ -303,35 +298,4 @@ export default {
   .main{
     min-height: 85vh;
   }
-  ::-webkit-scrollbar-button {
-background-image:url('');
-background-repeat:no-repeat;
-width:9px;
-height:0px
-}
-
-::-webkit-scrollbar-track {
-background-color:#ecedee
-}
-
-::-webkit-scrollbar-thumb {
--webkit-border-radius: 0px;
-border-radius: 0px;
-background-color:#6dc0c8;
-}
-
-::-webkit-scrollbar-thumb:hover{
-background-color:#56999f;
-}
-
-::-webkit-resizer{
-background-image:url('');
-background-repeat:no-repeat;
-width:8px;
-height:0px
-}
-
-::-webkit-scrollbar{
-width: 8px;
-}
 </style>
