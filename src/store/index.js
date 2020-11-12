@@ -45,7 +45,11 @@ export default new Vuex.Store({
             await axios.get(`http://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_PORT}/api/getConfig`)
             .then(data=>{
                 commit('config',data.data)
+                console.log(data)
             })
+        },
+        async setConfigAct(data){
+            await axios.post(`http://${process.env.VUE_APP_HOST}:${process.env.VUE_APP_PORT}/api/setConfig`,{config:data})
         }
     },
     modules: {},

@@ -22,13 +22,19 @@
           </thead>
           <tbody>
             <tr v-for="item in getClients" :key="item.name">
-              <td>{{ item.name }}</td>
+              <td class="itemName">{{ item.name }}
+                <v-progress-circular class="progressBar"
+                      v-if="item.status===2"
+                      indeterminate
+                      color="red"
+                    ></v-progress-circular> 
+              </td>
               <td>{{ item.time }}</td>
               <td>
                 <div style="margin-top: 5px">
 
                   <v-btn
-                    v-if="item.status === 'idle' && item.name.split('_')[0] === 'puppeteer'"
+                    v-if="item.status === 0 && item.name.split('_')[0] === 'puppeteer'"
                     style="margin-right: 10px"
                     outlined
                     small
@@ -39,7 +45,7 @@
                   >
 
                   <v-btn
-                    v-if="item.status === 'idle' && item.name.split('_')[0] !== 'puppeteer'"
+                    v-if="item.status === 0 && item.name.split('_')[0] !== 'puppeteer'"
                     style="margin-right: 10px"
                     outlined
                     small
@@ -50,20 +56,23 @@
                   >
 
                   <v-btn
-                    v-if="item.status === 'running'"
+                    v-if="item.status === 1||item.status===2||item.status===3"
+                    :disabled="item.status===2"
                     style="margin-right: 10px"
                     outlined
                     small
                     color="red"
                     @click="stop(item)"
-                    ><v-icon>mdi-stop</v-icon>
+                    >
+                    <v-icon>mdi-stop</v-icon>
+                    
                   </v-btn>
                   <v-btn outlined small color="black" @click="restart(item)"
                     ><v-icon>mdi-sync</v-icon>
                   </v-btn>
                 </div>
               </td>
-              <td style="cursor:pointer" @click="client=item; sheetConfig=true; checkClient=true; getConfigAct()">Изменить</td>
+              <td style="cursor:pointer" @click="client=item; sheetConfig=true; checkClient=true; tempJsonData();" >Изменить</td>
               <td style="cursor:pointer;" @click="client=item; sheet=true" >Смотреть</td>
             </tr>
           </tbody>
@@ -121,8 +130,10 @@
         <span class="nameLogs">Конфигурация {{client.name}}</span>
         <div class="both"></div>
         <div class="config">
-          <v-jsoneditor  v-if="client.name.split('_')[0]==='puppeteer'" v-model="getConfig"/>
-          <v-jsoneditor  v-if="client.name.split('_')[0]==='mercury'" v-model="json"/>
+
+          <vue-json-editor v-if="client.name.split('_')[0]==='puppeteer'" @json-save="onJsonSave" :show-btns="true" v-model="temp"></vue-json-editor>
+          <vue-json-editor v-if="client.name.split('_')[0]==='mercury'" v-model="json" @json-change="onJsonChange"></vue-json-editor>
+
         </div>
       </v-sheet>
     </v-bottom-sheet>
@@ -186,12 +197,15 @@
 
 <script>
 import { mapGetters, mapActions } from "vuex";
-import VJsoneditor from 'v-jsoneditor/src/index'
+import vueJsonEditor from 'vue-json-editor';
 export default {
   name: "App",
   components: {
-        VJsoneditor
+      vueJsonEditor
     },
+    mounted() {
+    this.getEnginesAct()
+  },
   data() {
     return {
       client: '',
@@ -207,8 +221,9 @@ export default {
       sheetConfig:false,
       checkClient: false,
       json: {
-                      "hello": "vue"
-                  }
+        "hello": "vue"
+      },
+      temp: ''
     }
   },
   computed: {
@@ -217,19 +232,30 @@ export default {
   sockets: {
     connect: function () {
       this.whoami();
+      this.getStatus()
     },
     update_clients: function (data) {
       this.getClientsAct(data);
     },
-    log: function ({ member, data }) {
+    log: function ({ member, text, status }) {
       this.getClients.map((client) => {
-        if (client.name === member)
-          client.logs.unshift(data)
+        if (client.name === member){
+          if(client.status!==2 || status === 0) client.status = Number(status)
+          client.logs.unshift(text)
+        }          
       })
     },
+    getStatusToClient: function({ member, status }) {
+      this.getClients.map((client) => {
+        if (client.name === member){
+          if(client.status!==2 || status === 0) client.status = Number(status)
+          client.status = Number(status)
+      }
+      })
+    }
   },
   methods: {
-    ...mapActions(["clientsAct", "enginesAct","configAct"]),
+    ...mapActions(["clientsAct", "enginesAct","configAct","setConfigAct"]),
     setClient(client) {
       this.client = client
       this.client_name = client.name
@@ -245,7 +271,9 @@ export default {
     async getConfigAct(){
       await this.configAct()
     },
-
+    getStatus() {
+      this.$socket.emit('getStatus')
+    },
     /**               Socket Methods                  */
     whoami() {
       this.$socket.emit("who_am_i", "newser_client");
@@ -255,9 +283,7 @@ export default {
       queryData.source = this.source
       queryData.pages = this.pages
       queryData.engines = this.engines
-
       this.$socket.emit("start", this.client, queryData) 
-      this.client.status = "running";
     },
     stop(client) {
       if (this.$socket.emit("stop", client)) client.status = "idle";
@@ -266,16 +292,27 @@ export default {
       this.$socket.emit("restart", client);
     },
     viewLogs(name){
-      //this.showLogs=name;
       console.log(name);
-      this.logs=this.getClients;
+      this.logs = this.getClients;
       console.log(this.logs);
-      this.showLogsWindow=true
+      this.showLogsWindow = true
     },
+    async onJsonSave (value) {
+        await this.setConfigAct(value)
+        console.log(value)
+      },
+
+   async tempJsonData(){
+      await this.getConfigAct(); 
+      this.temp=this.getConfig;
+      
+    }
     /************************************************ */
   },
-  mounted() {
-    this.getEnginesAct()
+  watch: {
+    temp: function (val) {
+      this.temp = val
+    }
   }
 };
 </script>
@@ -285,11 +322,11 @@ export default {
   font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
 }
   .logs_block{
-    height: 42vh;
+    height: 100vh;
   }
   .logs{
     text-align: left;
-    height: 82%;    
+    height: 100%;    
     display:flex;
     flex-direction:column;
     flex-wrap: nowrap;
@@ -348,4 +385,18 @@ export default {
     height: 82%;
     overflow-y: scroll;
   }
+  .v-progress-circular {
+  margin: 1rem;
+}
+.itemName{
+position: relative;
+}
+.progressBar{
+position: absolute;
+left:0;
+top:0;
+bottom:0;
+right: 0;
+margin: auto;
+}
 </style>

@@ -4,9 +4,7 @@ import router from './router'
 import store from './store'
 import VueSocketIO from 'vue-socket.io'
 import vuetify from './plugins/vuetify'
-import VJsoneditor from 'v-jsoneditor/src/index'
 
-Vue.use(VJsoneditor)
 Vue.config.productionTip = false
 Vue.use(new VueSocketIO({
     debug: true,
